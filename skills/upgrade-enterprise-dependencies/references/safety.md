@@ -55,6 +55,7 @@ and hand it back as a manual follow-up rather than making it invisible.
 Per SKILL.md §6, but concretely: the user should be able to check out the branch and
 independently confirm your claims — `git log` shows one commit per checkpoint with
 clear messages, `git diff <base>..<branch>` shows exactly the version/config/code
-changes, and re-running `mvn test` — scoped the same way you verified it, `-pl <module>
--am`, not a full-reactor build — on any module you upgraded reproduces the green result
-you reported. If any of those three wouldn't hold up, the report isn't done yet.
+changes, and re-running the tests — scoped the same way you verified them, per named
+module rather than across the whole project — reproduces the green result you reported.
+Quote the exact command you ran so it can be repeated verbatim. If any of those three
+wouldn't hold up, the report isn't done yet.

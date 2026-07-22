@@ -43,13 +43,20 @@ and read the actual content — don't stop at the release body if it's just a po
 Read each note's actual text. You're looking for, roughly in order of how often they
 bite:
 - Removed/renamed configuration properties (`spring.*` keys)
-- Removed or default-changed autoconfiguration
-- Deprecated-then-removed public API (check against what this repo's `src/` actually
-  imports — `grep -r` the class/package name before worrying about it)
-- Default dependency version bumps that matter (e.g. a Hibernate major bump changes
-  dialect/behavior even without a compile error)
-- New minimum Java version requirements
+- Removed, relocated or default-changed auto-configuration
+- Classes moved to a different package, or functionality extracted into a separate
+  artifact/starter that now has to be depended on explicitly
+- A managed dependency dropped in favour of a first-party successor, and the API
+  differences that come with it
+- Deprecated-then-removed public API (check against what the project's sources actually
+  import — `grep -r` the class/package name before worrying about it)
+- Default dependency version bumps that matter (an ORM major bump changes
+  dialect/behaviour even without a compile error)
+- New minimum Java version, or a new platform/spec baseline
 - Actuator/observability endpoint or metric name changes
+
+`breaking-change-patterns.md` describes each of these shapes and how to resolve it —
+read it alongside the notes so you know what a given sentence in a changelog will cost.
 
 Keep a running note (in your own scratch, not a file the user asked for) of
 `(version, change, why it matters here, source)` as you go — this becomes the
@@ -57,26 +64,36 @@ migration brief in SKILL.md §3.
 
 **4. Spring Cloud is a release train, not a single artifact**
 
-`spring-cloud.version` in the root POM (a calendar-style train name) names a *train*, whose
-compatible Spring Boot version is documented on the Spring Cloud release train wiki/
-release notes, not inferable from the version number alone. Fetch the Spring Cloud
-release notes the same way (`spring-cloud/spring-cloud-release` repo tags/releases)
-and read them to confirm which train pairs with the target Spring Boot line — do not
-guess from version number patterns alone, they've shifted schemes across trains.
+The Spring Cloud version declared in the root build (a calendar-style train name) names
+a *train*, whose compatible Spring Boot version is documented on the Spring Cloud release
+train wiki/release notes and is not inferable from the version number alone. Fetch those
+release notes the same way (`spring-cloud/spring-cloud-release` repo tags/releases) and
+read them to confirm which train pairs with the target Spring Boot line — do not guess
+from version-number patterns, they've shifted schemes across trains.
 
-## The platform's own history (this repo, not GitHub)
+The same three-step method (list releases in range → fetch each body → read it) applies
+to any GitHub-hosted third-party dependency you have to bump; only the repo changes.
+
+## An internal platform's own history (git, not GitHub releases)
 
 Internal platform-starter parents usually aren't published externally — their history
-lives in this repo's git log. When the upgrade target is a platform version bump rather
+lives in the repo's git log. When the upgrade target is a platform version bump rather
 than (or in addition to) a raw Spring Boot bump, reconstruct what changed the same way,
-from git instead of GitHub — pass each platform parent's POM path to `git log`/`git diff`:
+from git instead of GitHub — pass the root and each platform parent's build file to
+`git log`/`git diff`:
 
 ```bash
 git log --oneline <current-tag-or-commit>..<target-tag-or-commit> -- \
-  pom.xml <platform-parent>/pom.xml
+  <root-build-file> <platform-parent>/<build-file>
 git diff <current-tag-or-commit>..<target-tag-or-commit> -- \
-  pom.xml <platform-parent>/pom.xml
+  <root-build-file> <platform-parent>/<build-file>
 ```
+
+If the platform is consumed as a published artifact rather than as a sibling module in
+the same repo, its sources may not be here at all. In that case get the change set from
+wherever it *is* published — the artifact's own repository, its changelog, or by diffing
+the two resolved dependency trees (`mvn dependency:tree` on a module pinned to the old
+version versus the new one), which at minimum tells you every managed version that moved.
 
 Read every commit in the range (not just the final diff) the same way you'd read
 release notes — a commit that bumped a version and then a later commit that reverted
